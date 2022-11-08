@@ -20,6 +20,7 @@
 
 require 'json'
 require 'bigdecimal'
+require 'time'
 
 module DB
 	module Postgres
@@ -99,12 +100,20 @@ module DB
 					attr :name
 					
 					def parse(string)
-						if match = string.match(/(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)([\+\-].*)?/)
-							parts = match.captures
-							parts[6] ||= "UTC"
-							
-							return Time.new(*parts)
+						return nil unless /\A\d+-\d+-\d+ \d+:\d+:\d+(\.\d+)?([-+]\d+(:\d+)?)?\z/ === string
+
+						ts_format = case string
+						when /\.\d+[-+]\d+(:\d+)?\z/
+							'%Y-%m-%d %H:%M:%S.%N %Z'
+						when /\.\d+\z/
+							'%Y-%m-%d %H:%M:%S.%N'
+						when /[-+]\d+(:\d+)?\z/
+							'%Y-%m-%d %H:%M:%S %Z'
+						else
+							'%Y-%m-%d %H:%M:%S'
 						end
+
+						Time.strptime string, ts_format
 					end
 				end
 				
